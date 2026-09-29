@@ -1,0 +1,7 @@
+flask==3.1.1
+requests==2.32.3
+beautifulsoup4==4.13.4
+selenium==4.33.0
+pandas==2.2.3
+numpy==2.2.6
+plotly==6.1.2

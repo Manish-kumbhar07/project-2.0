@@ -1,0 +1,463 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- DATALIST FOR GLOBAL AUTOCOMPLETE -->
+<datalist id="stations-datalist">
+    {% for s in stations %}
+    <option value="{{ s.station_name }}">{{ s.station_code }} - {{ s.line }}</option>
+    {% endfor %}
+</datalist>
+
+<!-- ========================================================================= -->
+<!-- TAB 1: HOME (LANDING & QUICK ACCESS) -->
+<!-- ========================================================================= -->
+<section id="tab-home" class="tab-pane active">
+    <!-- HERO SECTION -->
+    <div class="hero-card card">
+        <div class="hero-header">
+            <h2 class="hero-title">Central Line Suburban Travel &amp; Network Intelligence</h2>
+            <p class="hero-desc">
+                High-precision journey planning, sequential timetable verification, station connectivity ranking, and live corridor advisories across the 49 stations of Mumbai Central Line.
+            </p>
+        </div>
+
+        <div class="hero-actions-grid">
+            <!-- Action 1: Station Intelligence Quick Search -->
+            <div class="quick-action-box">
+                <span class="box-label">🚉 SELECT &amp; ANALYSE STATION</span>
+                <div class="input-with-button">
+                    <input type="text" id="hero-station-input" list="stations-datalist" class="form-control" placeholder="Type station name (e.g. Dadar, Thane, Kalyan)...">
+                    <button id="hero-analyse-btn" class="btn btn-primary">Analyse Station &rarr;</button>
+                </div>
+                <div class="quick-chips">
+                    <span class="chip-label">Frequent Hubs:</span>
+                    <button type="button" class="station-chip" data-code="CSMT">CSMT</button>
+                    <button type="button" class="station-chip" data-code="DR">Dadar</button>
+                    <button type="button" class="station-chip" data-code="CLA">Kurla</button>
+                    <button type="button" class="station-chip" data-code="GC">Ghatkopar</button>
+                    <button type="button" class="station-chip" data-code="TNA">Thane</button>
+                    <button type="button" class="station-chip" data-code="KYN">Kalyan</button>
+                </div>
+            </div>
+
+            <!-- Action 2: Quick Journey Planner -->
+            <div class="quick-action-box">
+                <span class="box-label">🗺️ QUICK ROUTE PLANNER</span>
+                <div class="route-select-row">
+                    <select id="hero-src-select" class="form-control">
+                        <option value="">Origin Station...</option>
+                        {% for s in stations %}
+                        <option value="{{ s.station_code }}">{{ s.station_name }} ({{ s.station_code }})</option>
+                        {% endfor %}
+                    </select>
+                    <span class="arrow-separator">&rarr;</span>
+                    <select id="hero-dst-select" class="form-control">
+                        <option value="">Destination Station...</option>
+                        {% for s in stations %}
+                        <option value="{{ s.station_code }}">{{ s.station_name }} ({{ s.station_code }})</option>
+                        {% endfor %}
+                    </select>
+                    <button id="hero-route-btn" class="btn btn-secondary">Explore Route &rarr;</button>
+                </div>
+                <div class="quick-chips">
+                    <span class="chip-label">Popular Corridors:</span>
+                    <button type="button" class="route-preset-chip" data-src="CSMT" data-dst="TNA">CSMT &rarr; Thane</button>
+                    <button type="button" class="route-preset-chip" data-src="CSMT" data-dst="KYN">CSMT &rarr; Kalyan</button>
+                    <button type="button" class="route-preset-chip" data-src="DR" data-dst="KSRA">Dadar &rarr; Kasara</button>
+                    <button type="button" class="route-preset-chip" data-src="TNA" data-dst="KHPI">Thane &rarr; Khopoli</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+        <div class="card kpi-card">
+            <div class="kpi-icon-wrap bg-blue-tint">
+                <span class="kpi-symbol">🚉</span>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-value">{{ kpi_data.total_stations }}</div>
+                <div class="kpi-label">Stations Analyzed</div>
+                <div class="kpi-sub">Main Line, Kasara, Karjat, Khopoli</div>
+            </div>
+        </div>
+        <div class="card kpi-card">
+            <div class="kpi-icon-wrap bg-teal-tint">
+                <span class="kpi-symbol">🕒</span>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-value">{{ kpi_data.total_services }}</div>
+                <div class="kpi-label">Suburban Services Indexed</div>
+                <div class="kpi-sub">Fast, Slow, Shuttle Timetables</div>
+            </div>
+        </div>
+        <div class="card kpi-card">
+            <div class="kpi-icon-wrap bg-amber-tint">
+                <span class="kpi-symbol">★</span>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-value">{{ kpi_data.top_hub }}</div>
+                <div class="kpi-label">Top Connectivity Hub</div>
+                <div class="kpi-sub">Maximum Suburban &amp; Outstation Interchanges</div>
+            </div>
+        </div>
+        <div class="card kpi-card">
+            <div class="kpi-icon-wrap bg-green-tint">
+                <span class="kpi-symbol">⚡</span>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-value">{{ kpi_data.peak_hour }}</div>
+                <div class="kpi-label">Peak Service Density</div>
+                <div class="kpi-sub">Morning Rush Commuter Inflow</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTIVE DISRUPTION ALERT STRIP -->
+    {% if active_disruptions %}
+    <div class="alert-banner">
+        <div class="alert-banner-badge">⚠ Central Railway Bulletin</div>
+        <div class="alert-banner-content">
+            <strong>Active Advisory:</strong> {{ active_disruptions[0].title }} (Affected: {{ active_disruptions[0].affected_stations }})
+        </div>
+        <button class="alert-banner-link" data-goto-tab="tab-notices">View All {{ active_disruptions|length }} Notices &rarr;</button>
+    </div>
+    {% endif %}
+
+    <!-- NETWORK BRANCHES OVERVIEW -->
+    <div class="card">
+        <h3 class="section-title">Central Line Corridors &amp; Branch Distribution</h3>
+        <div class="corridors-grid">
+            <div class="corridor-card">
+                <div class="corridor-header">
+                    <h4>Main Line Corridor</h4>
+                    <span class="badge badge-primary">26 Stations</span>
+                </div>
+                <p class="corridor-path">CSMT &bull; Masjid &bull; Sandhurst Rd &bull; Byculla &bull; Dadar &bull; Kurla &bull; Ghatkopar &bull; Thane &bull; Diva &bull; Kalyan</p>
+                <div class="corridor-meta">Quadruple track quad-service corridor with dedicated Fast &amp; Slow suburban lines.</div>
+            </div>
+            <div class="corridor-card">
+                <div class="corridor-header">
+                    <h4>North-East Kasara Branch</h4>
+                    <span class="badge badge-teal">9 Stations</span>
+                </div>
+                <p class="corridor-path">Kalyan &bull; Shahad &bull; Ambivli &bull; Titwala &bull; Khadavli &bull; Vasind &bull; Asangaon &bull; Atgaon &bull; Kasara</p>
+                <div class="corridor-meta">Thal Ghat section gateway connecting Mumbai with Nashik &amp; North India.</div>
+            </div>
+            <div class="corridor-card">
+                <div class="corridor-header">
+                    <h4>South-East Karjat Branch</h4>
+                    <span class="badge badge-teal">9 Stations</span>
+                </div>
+                <p class="corridor-path">Kalyan &bull; Vithalwadi &bull; Ulhasnagar &bull; Ambernath &bull; Badlapur &bull; Vangani &bull; Shelu &bull; Neral &bull; Karjat</p>
+                <div class="corridor-meta">Bhor Ghat section gateway connecting Mumbai with Pune &amp; South India.</div>
+            </div>
+            <div class="corridor-card">
+                <div class="corridor-header">
+                    <h4>Khopoli Shuttle Extension</h4>
+                    <span class="badge badge-amber">5 Stations</span>
+                </div>
+                <p class="corridor-path">Karjat &bull; Palasdhari &bull; Kelavli &bull; Dolavli &bull; Lowjee &bull; Khopoli</p>
+                <div class="corridor-meta">Industrial foothills feeder branch with dedicated shuttle operations.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- TAB 2: JOURNEY EXPLORER (ROUTE ANALYSIS & ROUTE MAP) -->
+<!-- ========================================================================= -->
+<section id="tab-journey" class="tab-pane">
+    <div class="section-header-row">
+        <div>
+            <h2 class="section-title">Journey &amp; Route Intelligence</h2>
+            <p class="section-subtitle">Verified timetable routing, intermediate stop sequences, interchange detection, and disruption cross-referencing.</p>
+        </div>
+    </div>
+
+    <!-- ROUTE CONTROLS CARD -->
+    <div class="card route-control-card">
+        <div class="route-form-grid">
+            <div class="form-group">
+                <label for="route-source">Source Station</label>
+                <select id="route-source" class="form-control">
+                    <option value="">Select origin...</option>
+                    {% for s in stations %}
+                    <option value="{{ s.station_code }}">{{ s.station_name }} ({{ s.station_code }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group swap-btn-wrap">
+                <button type="button" id="route-swap-btn" class="btn btn-secondary btn-icon" title="Swap Origin &amp; Destination">⇄</button>
+            </div>
+            <div class="form-group">
+                <label for="route-dest">Destination Station</label>
+                <select id="route-dest" class="form-control">
+                    <option value="">Select destination...</option>
+                    {% for s in stations %}
+                    <option value="{{ s.station_code }}">{{ s.station_name }} ({{ s.station_code }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="route-time">Preferred Departure Time</label>
+                <input type="time" id="route-time" class="form-control" value="08:30">
+            </div>
+            <div class="form-group submit-wrap">
+                <button type="button" id="find-route-btn" class="btn btn-primary btn-block">Find Route</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROUTE RESULTS DISPLAY -->
+    <div id="route-results-container">
+        <div class="empty-state card">
+            <div class="empty-icon">🗺️</div>
+            <h3>Ready to Plan Your Suburban Journey</h3>
+            <p>Select your origin and destination stations above to calculate scheduled train services, stops, travel time, and track maps.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- TAB 3: STATION INTELLIGENCE & NETWORK MAP -->
+<!-- ========================================================================= -->
+<section id="tab-station" class="tab-pane">
+    <div class="section-header-row">
+        <div>
+            <h2 class="section-title">Station Intelligence &amp; Network Graph</h2>
+            <p class="section-subtitle">Examine infrastructure metrics, platform capacity, peak service density, and GIS node topology.</p>
+        </div>
+        <div class="header-action-group">
+            <label for="station-select" class="control-label">Station:</label>
+            <select id="station-select" class="form-control select-compact">
+                {% for s in stations %}
+                <option value="{{ s.station_code }}" {% if s.station_code == 'DR' %}selected{% endif %}>{{ s.station_name }} ({{ s.station_code }})</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="station-intelligence-grid">
+        <!-- Station Details Panel -->
+        <div id="station-detail-container" class="card">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <!-- Network Chart Panel -->
+        <div class="card chart-card">
+            <div class="card-header-sub">
+                <h3 class="card-subtitle">Central Line Geographic Network Graph</h3>
+                <span class="text-muted text-xs">Click any station node to load its intelligence</span>
+            </div>
+            <div id="network-chart" class="chart-panel">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- TAB 4: TRAIN SEARCH & TIMETABLES -->
+<!-- ========================================================================= -->
+<section id="tab-timetable" class="tab-pane">
+    <div class="section-header-row">
+        <div>
+            <h2 class="section-title">Suburban Train Search &amp; Station Timetables</h2>
+            <p class="section-subtitle">Scheduled suburban train departures and arrivals indexed directly from Central Railway timetables.</p>
+        </div>
+        <div class="timetable-filter-row">
+            <select id="timetable-station-select" class="form-control select-compact">
+                {% for s in stations %}
+                <option value="{{ s.station_code }}" {% if s.station_code == 'CSMT' %}selected{% endif %}>{{ s.station_name }} ({{ s.station_code }})</option>
+                {% endfor %}
+            </select>
+            <select id="timetable-direction-select" class="form-control select-compact">
+                <option value="all">All Directions</option>
+                <option value="Down">Down (Towards Kalyan/Kasara/Karjat)</option>
+                <option value="Up">Up (Towards CSMT)</option>
+            </select>
+            <button type="button" id="timetable-fetch-btn" class="btn btn-primary">Search Trains</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div id="timetable-results-container">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- TAB 5: RAILWAY NOTICES & DISRUPTIONS -->
+<!-- ========================================================================= -->
+<section id="tab-notices" class="tab-pane">
+    <div class="section-header-row">
+        <div>
+            <h2 class="section-title">Official Central Railway Notices &amp; Maintenance Advisories</h2>
+            <p class="section-subtitle">Real official maintenance blocks, signal upgrade notices, and track work advisories verified from Central Railway records.</p>
+        </div>
+        <div>
+            <button type="button" id="btn-refresh-notices" class="btn btn-secondary">🔄 Refresh Bulletins</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Notice ID</th>
+                        <th>Published Time</th>
+                        <th>Category / Scope</th>
+                        <th>Advisory Title</th>
+                        <th>Affected Corridor &amp; Stations</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in disruptions %}
+                    <tr>
+                        <td><code>{{ d.notice_id or d.id }}</code></td>
+                        <td>{{ d.published_at or d.date }}</td>
+                        <td>
+                            <span class="badge badge-teal">{{ d.category or d.impact }}</span>
+                        </td>
+                        <td><strong>{{ d.title or d.notice }}</strong></td>
+                        <td>
+                            <span class="affected-tag">{{ d.affected_stations or d.affected }}</span>
+                        </td>
+                        <td>
+                            {% if d.status == 'Active' %}
+                            <span class="badge badge-critical">Active</span>
+                            {% elif d.status == 'Monitoring' %}
+                            <span class="badge badge-major">Monitoring</span>
+                            {% else %}
+                            <span class="badge badge-fresh">Resolved</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">No notices recorded.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- TAB 6: SERVICE DENSITY & ANALYTICS -->
+<!-- ========================================================================= -->
+<section id="tab-analytics" class="tab-pane">
+    <div class="section-header-row">
+        <div>
+            <h2 class="section-title">Central Line Service Density &amp; Travel Analytics</h2>
+            <p class="section-subtitle">Hourly suburban frequency matrices, fast vs slow travel duration differentials, and station hub rankings.</p>
+        </div>
+    </div>
+
+    <!-- HEATMAP CARD -->
+    <div class="card" style="margin-bottom: var(--space-3);">
+        <div class="filter-bar">
+            <div class="form-group">
+                <label for="heatmap-branch">Corridor Branch</label>
+                <select id="heatmap-branch" class="form-control select-compact">
+                    <option value="all">All Branches</option>
+                    <option value="main">Main Line</option>
+                    <option value="kasara">Kasara Branch</option>
+                    <option value="karjat">Karjat Branch</option>
+                    <option value="khopoli">Khopoli Branch</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="heatmap-type">Service Type</label>
+                <select id="heatmap-type" class="form-control select-compact">
+                    <option value="all">All Service Types</option>
+                    <option value="fast">Fast Suburban Only</option>
+                    <option value="slow">Slow Suburban Only</option>
+                </select>
+            </div>
+            <button id="apply-filters-btn" class="btn btn-primary">Update Heatmap</button>
+        </div>
+        <div id="heatmap-chart" class="chart-panel heatmap-panel">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <!-- CHARTS ROW: FAST VS SLOW & TOP HUBS -->
+    <div class="charts-row">
+        <div class="card chart-card">
+            <div class="card-header-sub">
+                <h3 class="card-subtitle">Fast vs Slow Corridor Travel Duration (min)</h3>
+            </div>
+            <div id="comparison-chart" class="chart-panel">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+        <div class="card chart-card">
+            <div class="card-header-sub">
+                <h3 class="card-subtitle">Top 15 Stations by Connectivity Score</h3>
+            </div>
+            <div id="ranking-chart" class="chart-panel">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- TAB 7: ABOUT & DATA TRANSPARENCY -->
+<!-- ========================================================================= -->
+<section id="tab-about" class="tab-pane">
+    <div class="section-header-row">
+        <div>
+            <h2 class="section-title">About CentralSaathi &amp; Data Transparency</h2>
+            <p class="section-subtitle">System architecture, data hygiene, and transparency metrics.</p>
+        </div>
+    </div>
+
+    <div class="transparency-row">
+        <div class="card transparency-card">
+            <h4>Data Sources</h4>
+            <div class="value">{{ transparency.data_sources }}</div>
+            <div class="text-xs text-muted">Official Central Railway engineering bulletins &amp; suburban timetables</div>
+        </div>
+        <div class="card transparency-card">
+            <h4>Last Database Verification</h4>
+            <div class="value">{{ transparency.scrape_time }}</div>
+            <div class="text-xs text-muted">Verified against centralconnect.db records</div>
+        </div>
+        <div class="card transparency-card">
+            <h4>Indexed Timetable Records</h4>
+            <div class="value">{{ transparency.records }} Records</div>
+            <div class="text-xs text-muted">Complete station stops across active trains</div>
+        </div>
+        <div class="card transparency-card">
+            <h4>Data Quality Metrics</h4>
+            <div class="quality-list">
+                <div>Completeness: <strong>{{ transparency.completeness }}%</strong></div>
+                <div>Missing Values: <strong>{{ transparency.missing_values }}</strong></div>
+                <div>Duplicate Records: <strong>{{ transparency.duplicates }}</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: var(--space-3);">
+        <h3 class="card-subtitle">System Architecture &amp; Methodology</h3>
+        <p style="margin-top: 10px; color: var(--text-secondary); line-height: 1.7;">
+            CentralSaathi is engineered as a deterministic transit intelligence analyzer for Mumbai's Central Line network.
+            Unlike generic routing services that interpolate approximate road geometries, CentralSaathi operates directly on real railway topology:
+        </p>
+        <ul style="margin: 12px 0 12px 24px; color: var(--text-secondary); line-height: 1.8;">
+            <li><strong>Relational SQLite Topology:</strong> Stores 49 physical stations, quadruple-track trackage order, and timetable services in SQLite.</li>
+            <li><strong>Sequence-Validated Routing:</strong> Computes verified travel sequences, avoiding synthetic paths and accurately reflecting Fast vs Slow stop patterns.</li>
+            <li><strong>Real Service Density:</strong> Directly aggregates departures and arrivals across hourly intervals from timetable tables without artificial random distributions.</li>
+            <li><strong>Corridor Disruption Matching:</strong> Identifies active maintenance blocks and track advisories affecting specific stations along the commuter path.</li>
+        </ul>
+    </div>
+</section>
+{% endblock %}
